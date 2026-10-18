@@ -172,6 +172,30 @@ reinstall (CI re-downloads; acceptable).
 - **Query keys** are declared inline with their page's `useQuery` call; shared catalog
   keys live in `features/catalog/queries.ts`.
 
+### Admin UI (client)
+
+- **Routes:** `/login` (child of `StorefrontLayout`) and `/admin` wrapped in
+  `<AdminGuard><AdminLayout /></AdminGuard>`, with children `/admin` (overview),
+  `/admin/orders`, `/admin/orders/:id`, `/admin/products`, `/admin/products/new`,
+  `/admin/products/:id`, `/admin/categories`.
+- **`AdminGuard` gates on `useAuth().user?.role`.** Guests are redirected to `/login`
+  (`<Navigate to="/login" replace />`); signed-in non-admins see an `EmptyState`
+  (`"Administrators only"`); loading shows a `Spinner` with an accessible name. This is a
+  UI check only — the server still enforces admin on every write.
+- **`AdminLayout` owns its own `<main id="main">`** (the storefront layout is not
+  mounted here) and renders the persistent 240px (`w-60`) left rail plus a sticky top bar
+  with sign-out. Admin pages use the `mx-auto w-full max-w-storefront px-6 py-10
+  lg:px-10` container and never render their own `<main>`.
+- **Order status transitions are mirrored client-side** in
+  `features/orders/transitions.ts` (`ORDER_STATUS_TRANSITIONS`/`nextStatuses`), matching
+  the server's `order.types.ts`. The server remains the authority; an illegal move still
+  returns `409`.
+- **Admin data hooks live in `features/admin/queries.ts`** (`adminKeys` plus product,
+  category, and order queries and mutations); every mutation invalidates `adminKeys.all`.
+- **Product images** are URL fields with an upload button that POSTs to
+  `/api/v1/admin/uploads` and appends `{ url, alt: "" }` to the form's `images`. Product
+  and category writes are JSON, not multipart.
+
 ## Guardrails
 
 - **Never trust the client** for price, total, stock, or role. Recalculate server-side

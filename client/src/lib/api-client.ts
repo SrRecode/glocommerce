@@ -111,8 +111,17 @@ async function send<T>(path: string, options: ApiRequestOptions, isRetry: boolea
   const { method = 'GET', body, signal, skipAuthRetry } = options
 
   const headers = new Headers()
+  let requestBody: BodyInit | undefined
+
   if (body !== undefined) {
-    headers.set('Content-Type', 'application/json')
+    // FormData must keep the browser-generated multipart boundary, so it is sent
+    // as-is with no Content-Type; anything else is JSON-encoded.
+    if (body instanceof FormData) {
+      requestBody = body
+    } else {
+      headers.set('Content-Type', 'application/json')
+      requestBody = JSON.stringify(body)
+    }
   }
   if (accessToken) {
     headers.set('Authorization', `Bearer ${accessToken}`)
@@ -122,7 +131,7 @@ async function send<T>(path: string, options: ApiRequestOptions, isRetry: boolea
     method,
     headers,
     credentials: 'include',
-    body: body === undefined ? undefined : JSON.stringify(body),
+    body: requestBody,
     signal,
   })
 

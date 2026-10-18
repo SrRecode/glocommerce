@@ -39,6 +39,7 @@ export function AccountOrdersPage() {
           icon={<PackageCheck size={28} strokeWidth={1.5} aria-hidden="true" />}
           title="Sign in to view your orders"
           description="Your order history appears here once you are signed in."
+          action={<ButtonLink to="/login">Sign in</ButtonLink>}
         />
       </div>
     )

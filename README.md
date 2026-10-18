@@ -4,7 +4,8 @@ A MERN e-commerce storefront with an admin dashboard. Cash-on-delivery checkout.
 
 ## Status
 
-**Phase 5 complete — the storefront UI (catalog browsing, cart, and COD checkout) is green.**
+**Phase 6 complete — the admin dashboard (overview, order management, product and
+category CRUD) is green.**
 
 | Phase | Scope | State |
 | --- | --- | --- |
@@ -14,7 +15,7 @@ A MERN e-commerce storefront with an admin dashboard. Cash-on-delivery checkout.
 | 3 | Catalog backend (products, categories, search) | done |
 | 4 | Orders backend (COD checkout, stock, status) | done |
 | 5 | Storefront UI | done |
-| 6 | Admin dashboard UI | not started |
+| 6 | Admin dashboard UI | done |
 | 7 | Hardening, performance, uploads | not started |
 | 8 | Ship | not started |
 

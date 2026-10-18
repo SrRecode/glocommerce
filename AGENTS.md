@@ -70,6 +70,9 @@ reinstall (CI re-downloads; acceptable).
 - **Styling:** design tokens from `docs/DESIGN.md` only. No raw hex, no arbitrary
   spacing values, no inline style objects for anything tokenised.
 - **Validation:** Zod at every trust boundary — request bodies, query params, env vars.
+- **NoSQL injection:** `mongoose.set("sanitizeFilter", true)` is enabled in `config/db.ts`,
+  so query filter values have `$`-operators and dots stripped by Mongoose. Keep it on, and
+  never hand a raw request object straight to a Mongoose filter.
 - **Versions:** install the latest stable release at the time of scaffolding and check
   current docs before writing integration code. Never guess an API from memory.
 
@@ -84,6 +87,12 @@ reinstall (CI re-downloads; acceptable).
   concurrent refreshes are coalesced into one in-flight request.
 - Auth response shapes (`{ user, accessToken }`, `204` logout, `202` for
   forgot-password/resend) are part of the contract; keep client payload types in sync.
+- **Cookie-authenticated writes are CSRF-guarded.** Because the refresh cookie is sent
+  cross-site in production (`SameSite=None`), `POST /auth/refresh` and `POST /auth/logout`
+  mount `assertTrustedOrigin` (`middleware/csrf.ts`): it skips test, allows safe methods,
+  and permits only a missing `Origin` or one in `CLIENT_ORIGIN` list — otherwise
+  `403 FORBIDDEN`. Add the same guard to any new route that is authenticated purely by
+  the refresh cookie.
 
 ### Catalog, search, and uploads
 
@@ -106,8 +115,11 @@ reinstall (CI re-downloads; acceptable).
 - **Images:** storage goes through an adapter (`storage.service.ts`). With no
   `CLOUDINARY_*` env vars it writes to `server/uploads` and serves `/uploads/<file>`
   statically; with them set it uploads to Cloudinary. Upload middleware enforces a MIME
-  allowlist **plus** a magic-byte check **plus** `UPLOAD_MAX_BYTES`; generated filenames
-  are never taken from the client.
+  allowlist **plus** a magic-byte check **plus** `UPLOAD_MAX_BYTES` (`multer` memory
+  storage, 1 file), then re-reads the buffer with `image-size` and rejects images over
+  8192px on a side or 40,000,000px total. Generated filenames are never taken from the
+  client. Note: `storage.service.ts`'s MIME allowlist deliberately excludes SVG — only
+  raster formats are accepted.
 - **Duplicate names:** name uniqueness is enforced **in the service** with a
   case-insensitive regex check (not a Mongo `unique` index, which is case-sensitive), so a
   duplicate name returns `409` instead of a silent `201` with a suffixed slug. The
@@ -145,6 +157,12 @@ reinstall (CI re-downloads; acceptable).
   `objectIdSchema` and returns **`400 VALIDATION_ERROR`**, not 404 — consistent with the
   catalog routes. The service-level `Types.ObjectId.isValid` 404 guard is a defensive
   fallback that route validation normally reaches first.
+- **Abuse limits:** the whole orders router mounts `ordersRateLimit`
+  (`order.routes.ts`), so both `POST /orders` and `POST /orders/lookup` are throttled
+  together. Add new public order routes under the same router so they inherit it.
+- **Read indexes:** order queries are covered by `{ user, createdAt }`, `{ status,
+  createdAt }`, and `{ createdAt: -1 }` (the default admin sort). Keep new order list
+  queries backed by an index.
 
 ### Storefront UI (client)
 
@@ -177,7 +195,7 @@ reinstall (CI re-downloads; acceptable).
 - **Routes:** `/login` (child of `StorefrontLayout`) and `/admin` wrapped in
   `<AdminGuard><AdminLayout /></AdminGuard>`, with children `/admin` (overview),
   `/admin/orders`, `/admin/orders/:id`, `/admin/products`, `/admin/products/new`,
-  `/admin/products/:id`, `/admin/categories`.
+  `/admin/products/:id/edit`, `/admin/categories`.
 - **`AdminGuard` gates on `useAuth().user?.role`.** Guests are redirected to `/login`
   (`<Navigate to="/login" replace />`); signed-in non-admins see an `EmptyState`
   (`"Administrators only"`); loading shows a `Spinner` with an accessible name. This is a

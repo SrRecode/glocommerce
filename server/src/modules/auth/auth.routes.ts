@@ -2,6 +2,7 @@ import { Router } from "express";
 import { rateLimit } from "express-rate-limit";
 import { env } from "../../config/env.js";
 import { requireAuth } from "../../middleware/auth.js";
+import { assertTrustedOrigin } from "../../middleware/csrf.js";
 import { validateBody } from "../../middleware/validate.js";
 import {
   forgotPassword,
@@ -37,8 +38,8 @@ authRouter.use(authRateLimit);
 
 authRouter.post("/register", validateBody(registerSchema), register);
 authRouter.post("/login", validateBody(loginSchema), login);
-authRouter.post("/refresh", refresh);
-authRouter.post("/logout", logout);
+authRouter.post("/refresh", assertTrustedOrigin, refresh);
+authRouter.post("/logout", assertTrustedOrigin, logout);
 authRouter.get("/me", requireAuth, me);
 authRouter.post("/verify-email", validateBody(verifyEmailSchema), verifyEmailAddress);
 authRouter.post("/resend-verification", requireAuth, resendVerificationEmail);

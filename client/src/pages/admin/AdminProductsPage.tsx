@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { Package, Search } from 'lucide-react'
 import { Badge, type BadgeTone } from '@/components/Badge'
@@ -69,12 +69,7 @@ export function AdminProductsPage() {
   const productsQuery = useAdminProducts(params)
   const categoriesQuery = useCategories()
   const deleteMutation = useDeleteAdminProduct()
-  const [searchDraft, setSearchDraft] = useState(params.q ?? '')
   const [deleteError, setDeleteError] = useState<string | null>(null)
-
-  useEffect(() => {
-    setSearchDraft(params.q ?? '')
-  }, [params.q])
 
   const updateParams = (changes: Record<string, string | null>) => {
     const next = new URLSearchParams(searchParams)
@@ -90,7 +85,8 @@ export function AdminProductsPage() {
 
   const handleSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    updateParams({ q: searchDraft.trim() || null, page: null })
+    const value = new FormData(event.currentTarget).get('q')
+    updateParams({ q: typeof value === 'string' ? value.trim() || null : null, page: null })
   }
 
   const handlePage = (page: number) => {
@@ -147,9 +143,10 @@ export function AdminProductsPage() {
                 strokeWidth={1.5}
               />
               <input
+                key={params.q ?? ''}
                 type="search"
-                value={searchDraft}
-                onChange={(event) => setSearchDraft(event.target.value)}
+                name="q"
+                defaultValue={params.q ?? ''}
                 placeholder="Name, brand, or tag"
                 className="h-11 w-full rounded-md border border-line bg-surface pl-10 pr-3 text-body-sm text-ink placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
               />

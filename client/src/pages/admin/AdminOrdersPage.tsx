@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { type FormEvent } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { Search, ShoppingBag } from 'lucide-react'
 import { Badge } from '@/components/Badge'
@@ -63,11 +63,6 @@ export function AdminOrdersPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const params = readParams(searchParams)
   const ordersQuery = useAdminOrders(params)
-  const [searchDraft, setSearchDraft] = useState(params.q ?? '')
-
-  useEffect(() => {
-    setSearchDraft(params.q ?? '')
-  }, [params.q])
 
   function updateParams(changes: Record<string, string | null>) {
     const next = new URLSearchParams(searchParams)
@@ -83,7 +78,8 @@ export function AdminOrdersPage() {
 
   function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    updateParams({ q: searchDraft.trim() || null, page: null })
+    const value = new FormData(event.currentTarget).get('q')
+    updateParams({ q: typeof value === 'string' ? value.trim() || null : null, page: null })
   }
 
   function handlePage(page: number) {
@@ -118,11 +114,12 @@ export function AdminOrdersPage() {
                 aria-hidden="true"
               />
               <input
+                key={params.q ?? ''}
                 className="h-11 w-full rounded-md border border-line bg-surface pl-10 pr-3 text-body-sm text-ink placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
                 type="search"
-                value={searchDraft}
+                name="q"
+                defaultValue={params.q ?? ''}
                 placeholder="Order number, name, or phone"
-                onChange={(event) => setSearchDraft(event.target.value)}
               />
             </span>
           </label>

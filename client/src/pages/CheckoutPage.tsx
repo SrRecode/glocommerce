@@ -107,15 +107,46 @@ export function CheckoutPage() {
       clear()
       navigate(`/orders/${order.orderNumber}`, { state: { order } })
     } catch (error) {
+      // Stock failures arrive keyed to a non-form field ("items"), so they must not be
+      // routed through setError — that would register on a field nobody renders and the
+      // shopper would see nothing.
+      if (error instanceof ApiError && error.code === 'INSUFFICIENT_STOCK') {
+        const detail = error.fieldErrors?.items?.[0]
+        setFormError(
+          detail
+            ? `${detail}. Please update your cart and try again.`
+            : 'Some pieces are no longer available in the quantity you chose. Please review your cart and try again.',
+        )
+        return
+      }
+
       if (error instanceof ApiError && error.fieldErrors) {
+        const fieldPaths = new Set<string>([
+          'customer.name',
+          'customer.email',
+          'customer.phone',
+          'shippingAddress.line1',
+          'shippingAddress.line2',
+          'shippingAddress.city',
+          'shippingAddress.state',
+          'shippingAddress.postalCode',
+          'shippingAddress.country',
+          'note',
+        ])
+
+        let applied = false
         for (const [key, messages] of Object.entries(error.fieldErrors)) {
           const message = messages[0]
-          if (!message) {
+          if (!message || !fieldPaths.has(key)) {
             continue
           }
           setError(key as Path<CheckoutFormValues>, { type: 'server', message })
+          applied = true
         }
-        return
+
+        if (applied) {
+          return
+        }
       }
 
       setFormError(

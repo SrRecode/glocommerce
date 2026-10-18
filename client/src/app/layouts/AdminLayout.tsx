@@ -1,7 +1,8 @@
 import { LayoutDashboard, LogOut, Package, ShoppingBag, Store, Tags } from 'lucide-react'
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router'
 
+import { RouteFallback } from '@/app/ErrorBoundary'
 import { Badge } from '@/components/Badge'
 import { Button } from '@/components/Button'
 import { useAuth } from '@/features/auth/use-auth'
@@ -107,7 +108,9 @@ export function AdminLayout() {
         </aside>
 
         <main id="main" className="w-full flex-1 px-4 py-8 lg:px-8">
-          <Outlet />
+          <Suspense fallback={<RouteFallback />}>
+            <Outlet />
+          </Suspense>
         </main>
       </div>
     </div>

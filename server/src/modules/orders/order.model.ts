@@ -159,6 +159,9 @@ const orderSchema = new Schema<OrderAttrs>(
 
 orderSchema.index({ user: 1, createdAt: -1 });
 orderSchema.index({ status: 1, createdAt: -1 });
+// Unfiltered admin listing sorts by createdAt alone; the compound indexes above
+// cannot serve that sort without a leading equality filter.
+orderSchema.index({ createdAt: -1 });
 
 export type OrderDocument = HydratedDocument<OrderAttrs>;
 

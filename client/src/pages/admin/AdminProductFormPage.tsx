@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useEffect, useState, type ChangeEvent } from 'react'
+import { useMemo, useState, type ChangeEvent } from 'react'
 import { useForm, type Path } from 'react-hook-form'
 import { useNavigate, useParams } from 'react-router'
 import { Package, Upload, X } from 'lucide-react'
@@ -141,30 +141,30 @@ export function AdminProductFormPage() {
   const updateMutation = useUpdateAdminProduct()
 
   const [images, setImages] = useState<PublicProductImage[]>([])
+  const [prevProductId, setPrevProductId] = useState<string | null>(null)
   const [imageUrl, setImageUrl] = useState('')
   const [imageError, setImageError] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
 
+  const product = productQuery.data
+  const formValues = useMemo(() => (product ? toFormValues(product) : undefined), [product])
+
   const {
     register,
     handleSubmit,
-    reset,
     setError,
     formState: { errors, isSubmitting },
   } = useForm<ProductFormValues>({
     resolver: zodResolver(productFormSchema),
     defaultValues: DEFAULT_VALUES,
+    values: formValues,
   })
 
-  const product = productQuery.data
-
-  useEffect(() => {
-    if (product) {
-      reset(toFormValues(product))
-      setImages(product.images)
-    }
-  }, [product, reset])
+  if (product && product.id !== prevProductId) {
+    setPrevProductId(product.id)
+    setImages(product.images)
+  }
 
   const categories = categoriesQuery.data ?? []
   const isSaving = isSubmitting || createMutation.isPending || updateMutation.isPending

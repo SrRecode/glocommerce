@@ -1,7 +1,8 @@
 import { Search, ShoppingBag } from 'lucide-react'
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import { Link, Outlet, useNavigate } from 'react-router'
 
+import { RouteFallback } from '@/app/ErrorBoundary'
 import { selectTotalItems, useCartStore } from '@/features/cart/cart-store'
 
 const NAV_LINKS = [
@@ -92,7 +93,9 @@ export function StorefrontLayout() {
       </header>
 
       <main id="main" className="flex-1">
-        <Outlet />
+        <Suspense fallback={<RouteFallback />}>
+          <Outlet />
+        </Suspense>
       </main>
 
       <footer className="border-t border-line bg-surface">

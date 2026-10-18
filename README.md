@@ -4,8 +4,9 @@ A MERN e-commerce storefront with an admin dashboard. Cash-on-delivery checkout.
 
 ## Status
 
-**Phase 6 complete — the admin dashboard (overview, order management, product and
-category CRUD) is green.**
+**Phase 7 complete — hardening is green: CSRF origin guard, upload dimension cap,
+NoSQL-injection filter, order read indexes, route-level error boundaries, and a full
+loading/error/empty-state sweep.**
 
 | Phase | Scope | State |
 | --- | --- | --- |
@@ -16,7 +17,7 @@ category CRUD) is green.**
 | 4 | Orders backend (COD checkout, stock, status) | done |
 | 5 | Storefront UI | done |
 | 6 | Admin dashboard UI | done |
-| 7 | Hardening, performance, uploads | not started |
+| 7 | Hardening, performance, uploads | done |
 | 8 | Ship | not started |
 
 ## Stack
@@ -79,6 +80,11 @@ The refresh token is an httpOnly, `Secure` (in production), same-site cookie sco
 two calls on bootstrap — `POST /auth/refresh` to obtain a fresh access token, then
 `GET /auth/me` — and coalesces concurrent refreshes so a rotating cookie is never replayed.
 
+Because that cookie is sent cross-site in production (`SameSite=None`), the two
+cookie-authenticated writes — `POST /auth/refresh` and `POST /auth/logout` — mount an
+origin guard (`middleware/csrf.ts`): a request whose `Origin` is present and not in
+`CLIENT_ORIGIN` is rejected with `403 FORBIDDEN`.
+
 Create an admin account (roles are `customer` or `admin`):
 
 ```bash
@@ -117,7 +123,9 @@ fallback when the text search returns nothing. Prices are integer minor units (e
 
 Uploads go through a storage adapter: with `CLOUDINARY_*` unset the API writes to
 `server/uploads` and serves it at `/uploads/<file>`; with those keys set it uploads to
-Cloudinary. Images are checked for MIME type, magic bytes, and size (`UPLOAD_MAX_BYTES`).
+Cloudinary. Images are checked for MIME type, magic bytes, and size (`UPLOAD_MAX_BYTES`),
+then re-read with `image-size` to reject anything over 8192px on a side or 40,000,000px
+total; SVG is not accepted.
 
 ### Orders
 

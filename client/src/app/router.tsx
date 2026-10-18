@@ -1,29 +1,33 @@
 import { createBrowserRouter } from 'react-router'
 
 import { AdminGuard } from '@/app/AdminGuard'
+import { RouteErrorFallback } from '@/app/ErrorBoundary'
+import {
+  AccountOrdersPage,
+  AdminCategoriesPage,
+  AdminOrderDetailPage,
+  AdminOrdersPage,
+  AdminOverviewPage,
+  AdminProductFormPage,
+  AdminProductsPage,
+  CartPage,
+  CheckoutPage,
+  HomePage,
+  LoginPage,
+  OrderConfirmationPage,
+  OrderLookupPage,
+  ProductPage,
+  ShopPage,
+} from '@/app/lazy-pages'
 import { AdminLayout } from '@/app/layouts/AdminLayout'
 import { StorefrontLayout } from '@/app/layouts/StorefrontLayout'
-import { AccountOrdersPage } from '@/pages/AccountOrdersPage'
-import { CartPage } from '@/pages/CartPage'
-import { CheckoutPage } from '@/pages/CheckoutPage'
-import { HomePage } from '@/pages/HomePage'
-import { LoginPage } from '@/pages/LoginPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
-import { OrderConfirmationPage } from '@/pages/OrderConfirmationPage'
-import { OrderLookupPage } from '@/pages/OrderLookupPage'
-import { ProductPage } from '@/pages/ProductPage'
-import { ShopPage } from '@/pages/ShopPage'
-import { AdminCategoriesPage } from '@/pages/admin/AdminCategoriesPage'
-import { AdminOrderDetailPage } from '@/pages/admin/AdminOrderDetailPage'
-import { AdminOrdersPage } from '@/pages/admin/AdminOrdersPage'
-import { AdminOverviewPage } from '@/pages/admin/AdminOverviewPage'
-import { AdminProductFormPage } from '@/pages/admin/AdminProductFormPage'
-import { AdminProductsPage } from '@/pages/admin/AdminProductsPage'
 
 export const router = createBrowserRouter([
   {
     path: '/',
     element: <StorefrontLayout />,
+    errorElement: <RouteErrorFallback />,
     children: [
       { index: true, element: <HomePage /> },
       { path: 'products', element: <ShopPage /> },
@@ -43,6 +47,7 @@ export const router = createBrowserRouter([
         <AdminLayout />
       </AdminGuard>
     ),
+    errorElement: <RouteErrorFallback />,
     children: [
       { index: true, element: <AdminOverviewPage /> },
       { path: 'orders', element: <AdminOrdersPage /> },

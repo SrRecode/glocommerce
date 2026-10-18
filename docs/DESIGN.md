@@ -70,10 +70,16 @@ Neutrals carry the layout; brand and accent are used to direct attention.
 | `--color-brand-soft` | `#17302A` |
 | `--color-accent` | `#E0A05A` |
 | `--color-accent-text` | `#E0A05A` |
+| `--color-accent-soft` | `#2A2016` |
 | `--color-danger` | `#E86B62` |
 | `--color-success` | `#4CB48D` |
 | `--color-warning` | `#DDA45C` |
+| `--color-warning-mark` | `#DDA45C` |
 | `--color-info` | `#7BAEE0` |
+
+`--color-accent-soft` and `--color-warning-mark` were derived for dark mode when the
+tokens were ported to `client/src/index.css` (the light table already defined both); the
+dark column above is now the complete set.
 
 Rules:
 

@@ -13,18 +13,39 @@ MERN storefront + admin dashboard. Cash-on-delivery only, no online payments.
 
 ## Commands
 
-Run from the package root they belong to.
+Run from the package root the script belongs to, or use the root delegating scripts.
 
-| Task | client | server |
-| --- | --- | --- |
-| dev | `npm run dev` | `npm run dev` |
-| build | `npm run build` | `npm run build` |
-| test | `npm test` | `npm test` |
-| lint | `npm run lint` | `npm run lint` |
-| typecheck | `npm run typecheck` | `npm run typecheck` |
+| Task | root | client | server |
+| --- | --- | --- | --- |
+| install | `npm run install:all` | `npm install` | `npm install` |
+| dev | `npm run dev:client` / `dev:server` | `npm run dev` | `npm run dev` |
+| build | `npm run build` | `npm run build` | `npm run build` |
+| test | `npm test` | `npm test` | `npm test` |
+| lint | `npm run lint` | `npm run lint` | `npm run lint` |
+| typecheck | `npm run typecheck` | `npm run typecheck` | `npm run typecheck` |
+| all of the above | `npm run verify` | — | — |
 
-Scaffold pending — verify these scripts exist in each `package.json` before relying on
-them, and update this table when they change.
+Packages are deliberately **not** npm workspaces: `client` and `server` keep separate
+lockfiles so platform-specific native optional deps (`@rolldown/binding-*`,
+`@oxlint/binding-*`) resolve correctly for each. Add a root dependency only if it is
+genuinely repo-wide.
+
+Linting is **oxlint** in both packages, not ESLint. Type-checking is `tsc`; the client
+builds with `tsc -b`, the server builds with `tsc -p tsconfig.build.json`.
+
+### Server module system
+
+`server` is ESM: `"type": "module"` in `package.json`, with TS `module` and
+`moduleResolution` set to `nodenext`. Consequences:
+
+- **Relative imports must carry the `.js` extension** (`./config/env.js`), even though
+  the source file is `.ts`. Node resolves the emitted JavaScript.
+- Extend `tsconfig.json` for new typecheck paths; emit is configured separately in
+  `tsconfig.build.json`, which excludes tests.
+- `erasableSyntaxOnly` is on: no `enum`, no `namespace`, no constructor parameter
+  properties.
+- `dotenv` is loaded from `src/config/env.ts` and reads the **repo-root `.env`**, so run
+  the server from anywhere — never add `--env-file` flags.
 
 ## Conventions
 

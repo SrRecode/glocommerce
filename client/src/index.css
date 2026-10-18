@@ -1,0 +1,163 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ---------------------------------------------------------------------------
+   Static scales — docs/DESIGN.md sections 3, 5, 6.
+   These do not change between themes, so they can live in a plain @theme block.
+--------------------------------------------------------------------------- */
+@theme {
+  --font-sans: 'Inter Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Fraunces Variable', ui-serif, Georgia, serif;
+
+  /* Type scale: size / line-height (section 3) */
+  --text-caption: 12px;
+  --text-caption--line-height: 16px;
+  --text-body-sm: 14px;
+  --text-body-sm--line-height: 22px;
+  --text-body: 16px;
+  --text-body--line-height: 26px;
+  --text-body-lg: 18px;
+  --text-body-lg--line-height: 28px;
+  --text-h4: 20px;
+  --text-h4--line-height: 26px;
+  --text-h3: 24px;
+  --text-h3--line-height: 30px;
+  --text-h2: 30px;
+  --text-h2--line-height: 36px;
+  --text-h1: 38px;
+  --text-h1--line-height: 44px;
+  --text-display-lg: 48px;
+  --text-display-lg--line-height: 52px;
+  --text-display-xl: 60px;
+  --text-display-xl--line-height: 64px;
+
+  /* Radius (section 5) */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-pill: 999px;
+
+  /* Shadows — floating elements only (section 5) */
+  --shadow-xs: 0 1px 2px rgba(17, 19, 18, 0.06);
+  --shadow-sm: 0 1px 3px rgba(17, 19, 18, 0.08), 0 1px 2px rgba(17, 19, 18, 0.04);
+  --shadow-md: 0 4px 12px rgba(17, 19, 18, 0.08);
+  --shadow-lg: 0 12px 32px rgba(17, 19, 18, 0.1);
+
+  /* Motion (section 6) */
+  --ease-entrance: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+
+  /* Layout containers (section 4) */
+  --container-storefront: 1200px;
+  --container-admin: 1440px;
+}
+
+/* ---------------------------------------------------------------------------
+   Semantic colour — light is the default (section 2).
+--------------------------------------------------------------------------- */
+:root {
+  color-scheme: light;
+
+  --paper: #f6f7f5;
+  --surface: #ffffff;
+  --surface-sunken: #eff1ee;
+  --line: #e4e6e3;
+  --ink: #111312;
+  --graphite: #3d4442;
+  --muted: #6e7674;
+  --brand: #12604a;
+  --brand-hover: #0e4b3a;
+  --brand-soft: #e7f0ec;
+  --accent: #c9762f;
+  --accent-text: #8a4b14;
+  --accent-soft: #f7ede2;
+  --success: #1e7f5c;
+  --warning: #8a5410;
+  --warning-mark: #b4721a;
+  --danger: #b3261e;
+  --info: #2563a8;
+}
+
+.dark {
+  color-scheme: dark;
+
+  --paper: #0d0f0e;
+  --surface: #141715;
+  --surface-sunken: #1b1f1d;
+  --line: #262b28;
+  --ink: #f2f4f2;
+  --graphite: #c3c9c6;
+  --muted: #9aa29e;
+  --brand: #2e9e7c;
+  --brand-hover: #3db48f;
+  --brand-soft: #17302a;
+  --accent: #e0a05a;
+  --accent-text: #e0a05a;
+  --accent-soft: #2a2016;
+  --success: #4cb48d;
+  --warning: #dda45c;
+  --warning-mark: #dda45c;
+  --danger: #e86b62;
+  --info: #7baee0;
+}
+
+/* `inline` keeps the utilities pointing at the live custom properties, so the
+   .dark overrides above actually reach the generated classes. */
+@theme inline {
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-graphite: var(--graphite);
+  --color-muted: var(--muted);
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-soft: var(--brand-soft);
+  --color-accent: var(--accent);
+  --color-accent-text: var(--accent-text);
+  --color-accent-soft: var(--accent-soft);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-warning-mark: var(--warning-mark);
+  --color-danger: var(--danger);
+  --color-info: var(--info);
+}
+
+@layer base {
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-weight: 600;
+    text-wrap: balance;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

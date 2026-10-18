@@ -32,6 +32,11 @@ const envSchema = z.object({
   CLOUDINARY_API_KEY: z.string().min(1).optional(),
   CLOUDINARY_API_SECRET: z.string().min(1).optional(),
   UPLOAD_MAX_BYTES: z.coerce.number().int().positive().default(5 * 1024 * 1024),
+
+  // Orders. Shipping is free by default. A flat fee (minor units) is charged only
+  // when set; FREE_SHIPPING_THRESHOLD (0 = disabled) waives it above a subtotal.
+  SHIPPING_FLAT_FEE: z.coerce.number().int().nonnegative().default(0),
+  FREE_SHIPPING_THRESHOLD: z.coerce.number().int().nonnegative().default(0),
 });
 
 const parsed = envSchema.safeParse(process.env);

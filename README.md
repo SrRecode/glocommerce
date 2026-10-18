@@ -4,7 +4,7 @@ A MERN e-commerce storefront with an admin dashboard. Cash-on-delivery checkout.
 
 ## Status
 
-**Phase 3 complete — the catalog backend (products, categories, search, uploads) is green.**
+**Phase 4 complete — the orders backend (COD checkout, stock control, order status) is green.**
 
 | Phase | Scope | State |
 | --- | --- | --- |
@@ -12,7 +12,7 @@ A MERN e-commerce storefront with an admin dashboard. Cash-on-delivery checkout.
 | 1 | Scaffold client + server, CI, env contract | done |
 | 2 | Auth, roles, session | done |
 | 3 | Catalog backend (products, categories, search) | done |
-| 4 | Orders backend (COD checkout, stock, status) | not started |
+| 4 | Orders backend (COD checkout, stock, status) | done |
 | 5 | Storefront UI | not started |
 | 6 | Admin dashboard UI | not started |
 | 7 | Hardening, performance, uploads | not started |
@@ -41,7 +41,8 @@ Glocommerce/
 ├─ server/
 │  └─ src/{config,middleware,modules,utils,app.ts,server.ts}
 │     ├─ modules/auth/      register/login/refresh/logout/me + email verify + password reset
-│     └─ modules/catalog/   products, categories, search, image uploads
+│     ├─ modules/catalog/   products, categories, search, image uploads
+│     └─ modules/orders/    COD checkout, stock reservations, order status
 ├─ docs/
 │  ├─ DESIGN.md            design tokens and component specs
 │  └─ PRD.md               requirements (not yet added to the repo)
@@ -117,6 +118,32 @@ Uploads go through a storage adapter: with `CLOUDINARY_*` unset the API writes t
 `server/uploads` and serves it at `/uploads/<file>`; with those keys set it uploads to
 Cloudinary. Images are checked for MIME type, magic bytes, and size (`UPLOAD_MAX_BYTES`).
 
+### Orders
+
+Checkout is cash-on-delivery only. The service re-reads every product and recomputes
+prices, line totals, subtotal, shipping, and total server-side — client-sent prices are
+ignored. Each line stores a snapshot (`name`, `slug`, `image`, `unitPrice`, `quantity`,
+`lineTotal`) so an order survives later product edits or deletion.
+
+| Method | Path | Auth | Notes |
+| --- | --- | --- | --- |
+| `POST` | `/api/v1/orders` | public / customer | COD checkout; links to the account when a valid token is present |
+| `POST` | `/api/v1/orders/lookup` | public | guest lookup by `orderNumber` **and** `phone` |
+| `GET` | `/api/v1/orders/mine` | customer | `{ items, page, limit, total }` |
+| `GET` | `/api/v1/orders/mine/:orderNumber` | customer | `{ order }` |
+| `GET` | `/api/v1/admin/orders` | admin | `{ items, page, limit, total }` |
+| `GET` | `/api/v1/admin/orders/:id` | admin | `{ order }` |
+| `PATCH` | `/api/v1/admin/orders/:id/status` | admin | body `{ status, note? }`; illegal moves 409 |
+
+Statuses are `pending → confirmed → shipped → delivered`, plus `cancelled` (only from
+`pending` or `confirmed`). Stock is reserved with a conditional `$inc` guarded on
+available quantity — there are no multi-document transactions, so a failed line restores
+the reservations already taken. `SHIPPING_FLAT_FEE` (minor units) is charged only when
+non-zero and `FREE_SHIPPING_THRESHOLD` (0 = disabled) waives it above a subtotal; both
+default to free shipping.
+
+A path param that is not a 24-char hex ObjectId returns `400 VALIDATION_ERROR`, matching
+the catalog routes rather than 404.
 
 ## Documentation
 

@@ -115,6 +115,37 @@ reinstall (CI re-downloads; acceptable).
 - **Unique slugs:** slugs are generated with `slugify` and de-duplicated with a bounded
   suffix loop (`-2`, `-3`, …). Do not add a `unique: true` index on `name`.
 
+### Orders, stock, and shipping
+
+- **Status machine:** `pending → confirmed → shipped → delivered`, plus `cancelled`.
+  Cancelling is allowed only from `pending` or `confirmed`; `delivered` and `cancelled`
+  are terminal. Transitions are enforced in the service against
+  `ORDER_STATUS_TRANSITIONS`; an illegal move returns `409 INVALID_STATUS_TRANSITION`.
+- **Server-computed money:** at checkout the service re-reads each product and recomputes
+  prices, line totals, subtotal, shipping, and total from the database. Client-supplied
+  prices are ignored.
+- **Line snapshots:** each order item copies `name`, `slug`, `image`, `unitPrice`,
+  `quantity`, and `lineTotal` at purchase time, so the order survives product edits or
+  deletion. The `product` ref is therefore nullable.
+- **No transactions:** `mongodb-memory-server` runs a stand-alone node, not a replica set,
+  so multi-document transactions are unavailable. Stock is reserved with a conditional
+  `findOneAndUpdate` (`$inc` guarded on `stock: { $gte: quantity }`); if any line fails,
+  the reservations already taken are compensated by restoring stock. Order creation
+  failing after reservation does the same. Do not read-then-write stock.
+- **Duplicate lines rejected:** a repeated `productId` in one order is a `400 BAD_REQUEST`.
+- **Order numbers:** `GC-<base36 time>-<random hex>`, backed by a unique index. Creation
+  retries a bounded number of times on a duplicate-key error and only then surfaces
+  `500 ORDER_NUMBER_GENERATION_FAILED`.
+- **Guest lookup:** `POST /orders/lookup` needs the order number **and** phone together;
+  the phone is normalised (non-digits stripped, leading `+` kept) on both write and read.
+- **Shipping:** free by default. `SHIPPING_FLAT_FEE` (minor units) is charged only when
+  non-zero and `FREE_SHIPPING_THRESHOLD` (0 = disabled) waives it above a subtotal.
+  `calculateShippingFee` is the single place this is decided.
+- **Malformed ids:** a path param that is not a 24-char hex ObjectId fails
+  `objectIdSchema` and returns **`400 VALIDATION_ERROR`**, not 404 — consistent with the
+  catalog routes. The service-level `Types.ObjectId.isValid` 404 guard is a defensive
+  fallback that route validation normally reaches first.
+
 ## Guardrails
 
 - **Never trust the client** for price, total, stock, or role. Recalculate server-side

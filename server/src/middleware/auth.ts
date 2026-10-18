@@ -40,6 +40,31 @@ export function getAuthUser(res: Response): UserDocument {
   return user;
 }
 
+/**
+ * Attaches the account when a valid access token is present, but never rejects the
+ * request. Used by checkout so a signed-in order is linked to the user while guests
+ * can still complete the same flow.
+ */
+export async function optionalAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const token = readBearerToken(req);
+    if (!token) return next();
+
+    const payload = verifyAccessToken(token);
+    const user = await User.findById(payload.sub);
+    if (!user) return next();
+
+    res.locals.user = user;
+    next();
+  } catch {
+    next();
+  }
+}
+
+export function getOptionalAuthUser(res: Response): UserDocument | null {
+  return (res.locals.user as UserDocument | undefined) ?? null;
+}
+
 export function requireRole(...roles: UserRole[]): RequestHandler {
   return (_req, res, next) => {
     try {
@@ -55,8 +80,8 @@ export function requireRole(...roles: UserRole[]): RequestHandler {
 }
 
 /**
- * Reserved for checkout and order-history routes in Phase 4. Not yet applied to
- * any route, so guests can still browse and register without verifying.
+ * Optional email-verification gate. Not applied to any route yet, so guests can
+ * browse, register and check out without verifying their address first.
  */
 export function requireVerifiedEmail(): RequestHandler {
   return (_req, res, next) => {

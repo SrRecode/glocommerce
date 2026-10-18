@@ -23,7 +23,8 @@ Run from the package root the script belongs to, or use the root delegating scri
 | test | `npm test` | `npm test` | `npm test` |
 | lint | `npm run lint` | `npm run lint` | `npm run lint` |
 | typecheck | `npm run typecheck` | `npm run typecheck` | `npm run typecheck` |
-| all of the above | `npm run verify` | — | — |
+| smoke (deployed API) | `npm run smoke` | — | — |
+| verify (lint + typecheck + test + build) | `npm run verify` | — | — |
 
 Packages are deliberately **not** npm workspaces: `client` and `server` keep separate
 lockfiles so platform-specific native optional deps (`@rolldown/binding-*`,
@@ -55,6 +56,29 @@ standalone and root-level (`npm --prefix server run test`) runs share one downlo
 `mongod` binary instead of re-downloading it. The binary lives under
 `server/node_modules/.cache/mongodb-memory-server` and is wiped on a `node_modules`
 reinstall (CI re-downloads; acceptable).
+
+### Deploy
+
+The app ships as three pieces: the client to **Vercel**, the API to **Render** as a Docker
+image, and MongoDB to **Atlas**. Full runbook in `docs/DEPLOY.md`.
+
+- **`client/vercel.json`** — Vite build (`npm run build`, output `dist`) with an SPA
+  rewrite so every path falls back to `index.html` for the data router.
+- **`server/Dockerfile` / `.dockerignore`** — multi-stage `node:22-slim`: build stage runs
+  `npm ci` + `tsc`, runtime stage runs `npm ci --omit=dev` and `node dist/server.js` as the
+  non-root `node` user. `NODE_ENV=production` is set in the image.
+- **`render.yaml`** — Render blueprint: Docker service from `./server`, health check
+  `/api/v1/health`, `autoDeploy` on push. Secrets are `sync: false` (prompted, never
+  committed). Render injects `PORT`; do not set it.
+- **`scripts/smoke.mjs`** (`npm run smoke`) — hits `health` and `products?limit=1` on a
+  deployed API. Point it with `SMOKE_API_BASE_URL` (falls back to `VITE_API_BASE_URL`, then
+  `http://localhost:5000/api/v1`).
+- **Production config** — `COOKIE_SAME_SITE=none` (cross-site client + API), `trust proxy`
+  is enabled for the proxy in front of Render, `CLIENT_ORIGIN` accepts a comma-separated
+  list, and product images use Cloudinary (`CLOUDINARY_*`) because Render's disk is
+  ephemeral.
+- **CI does not deploy.** `.github/workflows/ci.yml` only lints, type-checks, and tests;
+  shipping happens through the platforms' Git-push deploys.
 
 ## Conventions
 

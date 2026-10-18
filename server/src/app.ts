@@ -42,7 +42,8 @@ export function buildApp(): Express {
       limit: env.RATE_LIMIT_MAX,
       standardHeaders: "draft-8",
       legacyHeaders: false,
-      skip: () => env.isTest,
+      skip: (req) =>
+        env.isTest || req.originalUrl.split("?")[0] === "/api/v1/health",
     }),
   );
 

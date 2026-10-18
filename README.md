@@ -4,9 +4,9 @@ A MERN e-commerce storefront with an admin dashboard. Cash-on-delivery checkout.
 
 ## Status
 
-**Phase 7 complete — hardening is green: CSRF origin guard, upload dimension cap,
-NoSQL-injection filter, order read indexes, route-level error boundaries, and a full
-loading/error/empty-state sweep.**
+**Phase 8 complete — the app ships. The client deploys to Vercel, the API to Render
+as a Docker image, and MongoDB Atlas backs both. `docs/DEPLOY.md` is the runbook;
+`npm run smoke` verifies a deployed API.**
 
 | Phase | Scope | State |
 | --- | --- | --- |
@@ -18,7 +18,7 @@ loading/error/empty-state sweep.**
 | 5 | Storefront UI | done |
 | 6 | Admin dashboard UI | done |
 | 7 | Hardening, performance, uploads | done |
-| 8 | Ship | not started |
+| 8 | Ship | done |
 
 ## Stack
 
@@ -32,7 +32,8 @@ JWT (access token + refresh token in an httpOnly cookie), bcryptjs, Multer (memo
 Cloudinary for image uploads, Helmet, CORS allowlist, express-rate-limit, pino +
 pino-http, Vitest + Supertest + mongodb-memory-server.
 
-**Deploy** — client on Vercel/Netlify, API on Render/Railway/Fly, database on Atlas.
+**Deploy** — client on Vercel, API on Render (Docker), database on MongoDB Atlas. See
+[`docs/DEPLOY.md`](docs/DEPLOY.md).
 
 ## Structure
 
@@ -47,9 +48,12 @@ Glocommerce/
 │     └─ modules/orders/    COD checkout, stock reservations, order status
 ├─ docs/
 │  ├─ DESIGN.md            design tokens and component specs
+│  ├─ DEPLOY.md            deployment runbook
 │  └─ PRD.md               requirements (not yet added to the repo)
 ├─ design/refs/            reference images
+├─ scripts/smoke.mjs       post-deploy smoke check
 ├─ .github/workflows/ci.yml
+├─ render.yaml             Render blueprint for the API
 ├─ AGENTS.md               agent + contributor conventions
 └─ .env.example
 ```
@@ -154,8 +158,35 @@ default to free shipping.
 A path param that is not a 24-char hex ObjectId returns `400 VALIDATION_ERROR`, matching
 the catalog routes rather than 404.
 
+## Deploy
+
+Three independent pieces, none of them deployed from CI:
+
+- **Client → Vercel.** Root directory `client`; `client/vercel.json` sets the Vite build
+  and rewrites every path to `index.html`, so deep links (including `/admin/...`) load.
+- **API → Render.** `render.yaml` is a blueprint for a Docker web service built from
+  `server/Dockerfile` (multi-stage `node:22-slim`, production dependencies only,
+  non-root user), health-checked at `/api/v1/health`.
+- **Database → MongoDB Atlas.** The API reads `MONGODB_URI`.
+
+Set `VITE_API_BASE_URL` on the client to `https://<api-host>/api/v1` and `CLIENT_ORIGIN`
+on the API to the client's origin, comma-separated if there are several — the CORS
+allowlist and the CSRF origin guard both read it.
+
+Because the SPA and API are on different sites, production cookies are
+`SameSite=None; Secure` (`COOKIE_SAME_SITE=none`) and the cookie-authenticated writes are
+origin-guarded. Product images must go to Cloudinary (set `CLOUDINARY_*`) — Render's disk
+is ephemeral, so the local-disk fallback loses uploads on every deploy.
+
+Verify a deployment:
+
+```bash
+SMOKE_API_BASE_URL=https://<api-host>/api/v1 npm run smoke
+```
+
 ## Documentation
 
 - `docs/DESIGN.md` — palette, type scale, spacing, component specs, a11y targets.
+- `docs/DEPLOY.md` — deployment runbook: env matrix, first-deploy order, rollback.
 - `docs/PRD.md` — product requirements and phase definitions.
 - `AGENTS.md` — conventions, guardrails, and the phase workflow.

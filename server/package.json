@@ -16,7 +16,8 @@
     "lint": "oxlint",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "seed:admin": "tsx src/scripts/seed-admin.ts"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

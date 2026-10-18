@@ -4,13 +4,13 @@ A MERN e-commerce storefront with an admin dashboard. Cash-on-delivery checkout.
 
 ## Status
 
-**Phase 1 complete — client and server scaffolds are green.**
+**Phase 2 complete — authentication, roles, and sessions are green.**
 
 | Phase | Scope | State |
 | --- | --- | --- |
 | 0 | Design system (`docs/DESIGN.md`) | done |
 | 1 | Scaffold client + server, CI, env contract | done |
-| 2 | Auth, roles, session | next |
+| 2 | Auth, roles, session | done |
 | 3 | Catalog backend (products, categories, search) | not started |
 | 4 | Orders backend (COD checkout, stock, status) | not started |
 | 5 | Storefront UI | not started |
@@ -40,6 +40,7 @@ Glocommerce/
 │  └─ src/{app,components,features,lib,pages}
 ├─ server/
 │  └─ src/{config,middleware,modules,utils,app.ts,server.ts}
+│     └─ modules/auth/      register/login/refresh/logout/me + email verify + password reset
 ├─ docs/
 │  ├─ DESIGN.md            design tokens and component specs
 │  └─ PRD.md               requirements (not yet added to the repo)
@@ -63,14 +64,34 @@ npm run dev:server                 # http://localhost:5000  (GET /api/v1/health)
 npm run dev:client                 # http://localhost:5173
 ```
 
-Nothing in the server requires MongoDB yet — it starts without `MONGODB_URI` and logs a
-warning, which keeps Phase 1 usable before the database exists.
+The server boots without `MONGODB_URI` (it logs a warning), but every auth endpoint
+needs a database. Set `MONGODB_URI` — tests never touch it and use an in-memory MongoDB
+instead.
+
+### Auth
+
+Access tokens live **in memory only** on the client and are sent as `Authorization: Bearer`.
+The refresh token is an httpOnly, `Secure` (in production), same-site cookie scoped to
+`/api/v1/auth`, so it is never readable from JavaScript. The client restores a session with
+two calls on bootstrap — `POST /auth/refresh` to obtain a fresh access token, then
+`GET /auth/me` — and coalesces concurrent refreshes so a rotating cookie is never replayed.
+
+Create an admin account (roles are `customer` or `admin`):
+
+```bash
+npm --prefix server run seed:admin -- admin@example.com "a-strong-password"
+```
 
 Verify everything the way CI does:
 
 ```bash
 npm run verify                     # lint + typecheck + test + build, both packages
 ```
+
+Server tests run against a real in-memory `mongod`, downloaded once on first run. The
+binary is cached at `server/node_modules/.cache/mongodb-memory-server` and
+`server/vitest.config.ts` pins `MONGOMS_DOWNLOAD_DIR` to that absolute path so standalone
+runs and root-level invocations share one cache.
 
 
 ## Documentation

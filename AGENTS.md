@@ -47,6 +47,15 @@ builds with `tsc -b`, the server builds with `tsc -p tsconfig.build.json`.
 - `dotenv` is loaded from `src/config/env.ts` and reads the **repo-root `.env`**, so run
   the server from anywhere — never add `--env-file` flags.
 
+### Server tests
+
+Tests use `mongodb-memory-server`. `server/vitest.config.ts` pins
+`MONGOMS_DOWNLOAD_DIR` to a `node_modules/.cache` path computed from the config file, so
+standalone and root-level (`npm --prefix server run test`) runs share one downloaded
+`mongod` binary instead of re-downloading it. The binary lives under
+`server/node_modules/.cache/mongodb-memory-server` and is wiped on a `node_modules`
+reinstall (CI re-downloads; acceptable).
+
 ## Conventions
 
 - **TypeScript everywhere.** No `any` without a comment justifying it. Shared API types
@@ -61,6 +70,18 @@ builds with `tsc -b`, the server builds with `tsc -p tsconfig.build.json`.
 - **Validation:** Zod at every trust boundary — request bodies, query params, env vars.
 - **Versions:** install the latest stable release at the time of scaffolding and check
   current docs before writing integration code. Never guess an API from memory.
+
+### Auth and sessions
+
+- Short-lived **access token in memory** (never in `localStorage`), plus a rotating
+  **refresh token in an httpOnly/Secure cookie** scoped to `/api/v1/auth`. Requests send
+  `credentials: "include"`.
+- The API exposes the authed user on `res.locals.user`; read it via `getAuthUser(res)`
+  rather than augmenting the Express `Request` type. Role checks use `requireRole`.
+- Client bootstrap is two calls — `POST /auth/refresh` then `GET /auth/me` — and
+  concurrent refreshes are coalesced into one in-flight request.
+- Auth response shapes (`{ user, accessToken }`, `204` logout, `202` for
+  forgot-password/resend) are part of the contract; keep client payload types in sync.
 
 ## Guardrails
 

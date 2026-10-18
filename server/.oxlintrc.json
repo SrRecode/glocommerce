@@ -8,6 +8,7 @@
   "ignorePatterns": ["dist/**"],
   "rules": {
     "typescript/no-explicit-any": "error",
-    "no-console": "error"
+    "no-console": "error",
+    "no-underscore-dangle": ["warn", { "allow": ["_id"] }]
   }
 }

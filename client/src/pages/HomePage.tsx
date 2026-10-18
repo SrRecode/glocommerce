@@ -2,10 +2,10 @@ import { PackageCheck, Search, ShieldCheck, Truck } from 'lucide-react'
 import { Link } from 'react-router'
 
 const CATEGORIES = [
-  { name: 'Kitchen', note: '12 pieces' },
-  { name: 'Textiles', note: '18 pieces' },
-  { name: 'Lighting', note: '9 pieces' },
-  { name: 'Stationery', note: '24 pieces' },
+  { name: 'Kitchen', slug: 'kitchen', note: '12 pieces' },
+  { name: 'Textiles', slug: 'textiles', note: '18 pieces' },
+  { name: 'Lighting', slug: 'lighting', note: '9 pieces' },
+  { name: 'Stationery', slug: 'stationery', note: '24 pieces' },
 ] as const
 
 const ASSURANCES = [
@@ -32,14 +32,14 @@ export function HomePage() {
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link
-                to="/"
+                to="/products"
                 className="inline-flex h-12 items-center gap-2 rounded-md bg-brand px-6 text-body-sm font-semibold text-white transition-colors duration-120 hover:bg-brand-hover"
               >
                 Browse the catalogue
                 <Search aria-hidden="true" size={16} strokeWidth={1.5} />
               </Link>
               <Link
-                to="/"
+                to="/products"
                 className="inline-flex h-12 items-center rounded-md border border-line bg-surface px-6 text-body-sm font-semibold text-ink transition-colors duration-120 hover:bg-surface-sunken"
               >
                 This week&rsquo;s edit
@@ -74,7 +74,7 @@ export function HomePage() {
             </h2>
           </div>
           <Link
-            to="/"
+            to="/products"
             className="text-body-sm font-medium text-brand transition-colors duration-120 hover:text-brand-hover"
           >
             All collections
@@ -84,7 +84,7 @@ export function HomePage() {
         <ul className="mt-10 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 lg:gap-6">
           {CATEGORIES.map((category) => (
             <li key={category.name}>
-              <Link to="/" className="group block">
+              <Link to={`/products?category=${category.slug}`} className="group block">
                 <div className="aspect-4/5 rounded-md border border-line bg-surface-sunken" />
                 <div className="mt-4 flex items-baseline justify-between gap-2">
                   <span className="text-h4 font-medium text-ink group-hover:text-brand">

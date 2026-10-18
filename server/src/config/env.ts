@@ -25,6 +25,13 @@ const envSchema = z.object({
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(900_000),
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(100),
   AUTH_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(20),
+
+  // Catalog uploads. When all three Cloudinary keys are set the storage adapter
+  // uploads to Cloudinary; otherwise it writes to the local uploads directory.
+  CLOUDINARY_CLOUD_NAME: z.string().min(1).optional(),
+  CLOUDINARY_API_KEY: z.string().min(1).optional(),
+  CLOUDINARY_API_SECRET: z.string().min(1).optional(),
+  UPLOAD_MAX_BYTES: z.coerce.number().int().positive().default(5 * 1024 * 1024),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -64,6 +71,10 @@ export const env = {
   passwordResetTtlMs: raw.PASSWORD_RESET_TTL_MINUTES * 60 * 1000,
   // Keep the test suite fast; production hashes stay at a defensible cost.
   bcryptCost: isTest ? 4 : 12,
+  cloudinaryEnabled: Boolean(
+    raw.CLOUDINARY_CLOUD_NAME && raw.CLOUDINARY_API_KEY && raw.CLOUDINARY_API_SECRET,
+  ),
+  uploadsDir: fileURLToPath(new URL("../../uploads", import.meta.url)),
 } as const;
 
 export type Env = typeof env;

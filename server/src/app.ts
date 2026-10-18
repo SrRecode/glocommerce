@@ -48,6 +48,10 @@ export function buildApp(): Express {
 
   app.use("/api/v1", apiV1Router);
 
+  // Locally stored product images are served straight from disk; when Cloudinary
+  // is configured the stored URLs are absolute and this mount is unused.
+  app.use("/uploads", express.static(env.uploadsDir));
+
   app.use(notFound);
   app.use(errorHandler);
 

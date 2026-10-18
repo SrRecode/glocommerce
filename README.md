@@ -4,14 +4,14 @@ A MERN e-commerce storefront with an admin dashboard. Cash-on-delivery checkout.
 
 ## Status
 
-**Phase 2 complete — authentication, roles, and sessions are green.**
+**Phase 3 complete — the catalog backend (products, categories, search, uploads) is green.**
 
 | Phase | Scope | State |
 | --- | --- | --- |
 | 0 | Design system (`docs/DESIGN.md`) | done |
 | 1 | Scaffold client + server, CI, env contract | done |
 | 2 | Auth, roles, session | done |
-| 3 | Catalog backend (products, categories, search) | not started |
+| 3 | Catalog backend (products, categories, search) | done |
 | 4 | Orders backend (COD checkout, stock, status) | not started |
 | 5 | Storefront UI | not started |
 | 6 | Admin dashboard UI | not started |
@@ -26,9 +26,9 @@ Phase 5), Vitest + Testing Library. Components are built from the tokens in
 `docs/DESIGN.md`; shadcn/ui is a source of ideas, not a look to adopt.
 
 **Server** — Node 22+ with Express 5 + TypeScript (ESM), MongoDB Atlas + Mongoose, Zod,
-JWT (access token + refresh token in an httpOnly cookie), bcryptjs, Multer + Cloudinary
-(Phase 7), Helmet, CORS allowlist, express-rate-limit, pino + pino-http, Vitest +
-Supertest + mongodb-memory-server.
+JWT (access token + refresh token in an httpOnly cookie), bcryptjs, Multer (memory) +
+Cloudinary for image uploads, Helmet, CORS allowlist, express-rate-limit, pino +
+pino-http, Vitest + Supertest + mongodb-memory-server.
 
 **Deploy** — client on Vercel/Netlify, API on Render/Railway/Fly, database on Atlas.
 
@@ -40,7 +40,8 @@ Glocommerce/
 │  └─ src/{app,components,features,lib,pages}
 ├─ server/
 │  └─ src/{config,middleware,modules,utils,app.ts,server.ts}
-│     └─ modules/auth/      register/login/refresh/logout/me + email verify + password reset
+│     ├─ modules/auth/      register/login/refresh/logout/me + email verify + password reset
+│     └─ modules/catalog/   products, categories, search, image uploads
 ├─ docs/
 │  ├─ DESIGN.md            design tokens and component specs
 │  └─ PRD.md               requirements (not yet added to the repo)
@@ -92,6 +93,29 @@ Server tests run against a real in-memory `mongod`, downloaded once on first run
 binary is cached at `server/node_modules/.cache/mongodb-memory-server` and
 `server/vitest.config.ts` pins `MONGOMS_DOWNLOAD_DIR` to that absolute path so standalone
 runs and root-level invocations share one cache.
+
+### Catalog
+
+Storefront reads and admin writes live behind one set of services:
+
+| Method | Path | Auth | Notes |
+| --- | --- | --- | --- |
+| `GET` | `/api/v1/categories` | public | `{ items, total }` (bounded, not paginated) |
+| `GET` | `/api/v1/categories/:slug` | public | `{ category }`, product count is active-only |
+| `GET` | `/api/v1/products` | public | `active` only; `{ items, page, limit, total }` |
+| `GET` | `/api/v1/products/:slug` | public | `{ product }`; drafts 404 |
+| `GET/POST/PATCH/DELETE` | `/api/v1/admin/products[/:id]` | admin | includes drafts |
+| `GET/POST/PATCH/DELETE` | `/api/v1/admin/categories[/:id]` | admin | delete 409 if products reference it |
+| `POST` | `/api/v1/admin/uploads` | admin | multipart `image`; returns `{ image }` |
+
+`GET /products` accepts `q`, `category`, `brand`, `minPrice`, `maxPrice`, `sort`, `featured`,
+`status`, `page`, `limit`. Search uses a MongoDB text index, with an escaped-`RegExp`
+fallback when the text search returns nothing. Prices are integer minor units (e.g.
+`499900` = Rs 4999.00) with a `currency` field.
+
+Uploads go through a storage adapter: with `CLOUDINARY_*` unset the API writes to
+`server/uploads` and serves it at `/uploads/<file>`; with those keys set it uploads to
+Cloudinary. Images are checked for MIME type, magic bytes, and size (`UPLOAD_MAX_BYTES`).
 
 
 ## Documentation

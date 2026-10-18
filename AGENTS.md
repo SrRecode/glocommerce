@@ -63,8 +63,10 @@ reinstall (CI re-downloads; acceptable).
 - **Backend layering:** `routes` → `validate` (Zod) → `auth`/`role` guard → `controller`
   → `service` → `model`. Controllers stay thin; business rules (stock, pricing, order
   status transitions) live in services.
-- **API shape:** base path `/api/v1`. Lists return
+- **API shape:** base path `/api/v1`. Paginated lists return
   `{ items, page, limit, total }`. Errors return `{ message, fieldErrors?, code }`.
+  Bounded, non-paginated lists (currently only `GET /categories`) return
+  `{ items, total }` with no `page`/`limit`.
 - **Styling:** design tokens from `docs/DESIGN.md` only. No raw hex, no arbitrary
   spacing values, no inline style objects for anything tokenised.
 - **Validation:** Zod at every trust boundary — request bodies, query params, env vars.
@@ -82,6 +84,36 @@ reinstall (CI re-downloads; acceptable).
   concurrent refreshes are coalesced into one in-flight request.
 - Auth response shapes (`{ user, accessToken }`, `204` logout, `202` for
   forgot-password/resend) are part of the contract; keep client payload types in sync.
+
+### Catalog, search, and uploads
+
+- **Prices/currency:** money is stored as an **integer count of minor units** (e.g.
+  `499900` = Rs 4999.00) with a separate `currency` field (default `PKR`). Never store or
+  compute money as a float.
+- **Search:** `GET /products` runs a MongoDB `$text` query when `q` is present. `$text`
+  cannot be combined inside `$or`, so a **fallback pass** re-runs an escaped `RegExp` over
+  name/slug/brand/description/tags when the text search returns nothing. Default sort with
+  `q` is relevance; `sort=` overrides it.
+- **Public vs admin reads:** one service entry point takes
+  `{ includeUnpublished }`. Storefront reads force it `false` (only `active` products);
+  admin reads pass `true`. A forgotten query validation therefore fails closed for the
+  storefront and only affects admin listing.
+- **Query parsing:** Express 5 `req.query`/`req.params` are getters. Validated values are
+  stored on `res.locals.query` / `res.locals.params` and read with `getQuery(res)` /
+  `getParams(res)`. **Every route that reads query or params must mount the matching
+  `validateQuery` / `validateParams` first** — `getQuery` returns `undefined` otherwise,
+  which surfaces as a 500 rather than a 400.
+- **Images:** storage goes through an adapter (`storage.service.ts`). With no
+  `CLOUDINARY_*` env vars it writes to `server/uploads` and serves `/uploads/<file>`
+  statically; with them set it uploads to Cloudinary. Upload middleware enforces a MIME
+  allowlist **plus** a magic-byte check **plus** `UPLOAD_MAX_BYTES`; generated filenames
+  are never taken from the client.
+- **Duplicate names:** name uniqueness is enforced **in the service** with a
+  case-insensitive regex check (not a Mongo `unique` index, which is case-sensitive), so a
+  duplicate name returns `409` instead of a silent `201` with a suffixed slug. The
+  `E11000` catch on the slug stays as a backstop.
+- **Unique slugs:** slugs are generated with `slugify` and de-duplicated with a bounded
+  suffix loop (`-2`, `-3`, …). Do not add a `unique: true` index on `name`.
 
 ## Guardrails
 

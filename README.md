@@ -4,7 +4,7 @@ A MERN e-commerce storefront with an admin dashboard. Cash-on-delivery checkout.
 
 ## Status
 
-**Phase 4 complete — the orders backend (COD checkout, stock control, order status) is green.**
+**Phase 5 complete — the storefront UI (catalog browsing, cart, and COD checkout) is green.**
 
 | Phase | Scope | State |
 | --- | --- | --- |
@@ -13,7 +13,7 @@ A MERN e-commerce storefront with an admin dashboard. Cash-on-delivery checkout.
 | 2 | Auth, roles, session | done |
 | 3 | Catalog backend (products, categories, search) | done |
 | 4 | Orders backend (COD checkout, stock, status) | done |
-| 5 | Storefront UI | not started |
+| 5 | Storefront UI | done |
 | 6 | Admin dashboard UI | not started |
 | 7 | Hardening, performance, uploads | not started |
 | 8 | Ship | not started |
@@ -21,8 +21,8 @@ A MERN e-commerce storefront with an admin dashboard. Cash-on-delivery checkout.
 ## Stack
 
 **Client** — React 19 + TypeScript + Vite 8, Tailwind v4, React Router 8 (data router),
-TanStack Query, Zustand (cart), React Hook Form + Zod, Lucide icons, Motion (reserved for
-Phase 5), Vitest + Testing Library. Components are built from the tokens in
+TanStack Query, Zustand (cart), React Hook Form + Zod, Lucide icons, Motion (installed,
+not yet used), Vitest + Testing Library. Components are built from the tokens in
 `docs/DESIGN.md`; shadcn/ui is a source of ideas, not a look to adopt.
 
 **Server** — Node 22+ with Express 5 + TypeScript (ESM), MongoDB Atlas + Mongoose, Zod,

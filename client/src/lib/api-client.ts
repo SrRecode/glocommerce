@@ -3,20 +3,29 @@ const API_BASE_URL: string = import.meta.env.VITE_API_BASE_URL ?? '/api/v1'
 export interface ApiErrorPayload {
   message: string
   code?: string
-  fieldErrors?: Record<string, string>
+  /** Validation errors keyed by dotted field path, e.g. `customer.name`. */
+  fieldErrors?: Record<string, string[]>
+}
+
+/** Envelope for paginated list endpoints: `{ items, page, limit, total }`. */
+export interface Paginated<T> {
+  items: T[]
+  page: number
+  limit: number
+  total: number
 }
 
 /** Normalized failure from the API. `fieldErrors` is present on validation errors. */
 export class ApiError extends Error {
   readonly status: number
   readonly code: string
-  readonly fieldErrors: Record<string, string> | undefined
+  readonly fieldErrors: Record<string, string[]> | undefined
 
   constructor(options: {
     status: number
     message: string
     code?: string
-    fieldErrors?: Record<string, string>
+    fieldErrors?: Record<string, string[]>
   }) {
     super(options.message)
     this.name = 'ApiError'

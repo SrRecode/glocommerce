@@ -146,6 +146,32 @@ reinstall (CI re-downloads; acceptable).
   catalog routes. The service-level `Types.ObjectId.isValid` 404 guard is a defensive
   fallback that route validation normally reaches first.
 
+### Storefront UI (client)
+
+- **Routes** (storefront, inside `StorefrontLayout`): `/` (home), `/products` (catalogue),
+  `/products/:slug` (product), `/cart`, `/checkout`, `/orders/:orderNumber` (confirmation),
+  `/orders/lookup` (guest tracking), `/account/orders` (authed list). `*` renders
+  `NotFoundPage` outside the layout. `StorefrontLayout` owns the single `<main id="main">`;
+  **pages return a fragment or a root `<div>` and never render their own `<main>`.**
+- **Money and dates are formatted locally, not with `Intl`.** `lib/money.ts` formats from
+  the integer minor-units value with a per-currency fraction and symbol table;
+  `lib/dates.ts` formats ISO strings in UTC against a fixed month list. This keeps output
+  deterministic across Node/browsers and avoids timezone and locale drift in tests. Do not
+  introduce `Intl.NumberFormat` / `toLocaleDateString`.
+- **Cart** lives in `features/cart/cart-store.ts` (Zustand, persisted to `localStorage`
+  under `glocommerce-cart`). Read totals through the exported selectors
+  `selectTotalItems`, `selectSubtotal`, `selectCurrency` — never recompute inline.
+- **Order rendering is shared.** `components/OrderSummary.tsx` renders an order on both the
+  confirmation and lookup pages. Status pill tones live in
+  `features/orders/status-tones.ts`, **not** in a component file.
+- **One concern per file for oxlint's `react/only-export-components`:** a `.tsx` component
+  file exports only its component (plus `type` exports and trivial-literal `const`s). Any
+  non-trivial shared value (a `cva` variant map, `ORDER_STATUS_TONES`) lives in a sibling
+  `.ts` module (`button-styles.ts`, `status-tones.ts`). `allowConstantExport` does not
+  cover non-trivial object literals.
+- **Query keys** are declared inline with their page's `useQuery` call; shared catalog
+  keys live in `features/catalog/queries.ts`.
+
 ## Guardrails
 
 - **Never trust the client** for price, total, stock, or role. Recalculate server-side

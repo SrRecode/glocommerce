@@ -1,13 +1,26 @@
 import { Search, ShoppingBag } from 'lucide-react'
-import { Link, Outlet } from 'react-router'
+import { useState } from 'react'
+import { Link, Outlet, useNavigate } from 'react-router'
+
+import { selectTotalItems, useCartStore } from '@/features/cart/cart-store'
 
 const NAV_LINKS = [
-  { label: 'Shop', to: '/' },
-  { label: 'Collections', to: '/' },
-  { label: 'Journal', to: '/' },
+  { label: 'Shop', to: '/products' },
+  { label: 'Track order', to: '/orders/lookup' },
+  { label: 'My orders', to: '/account/orders' },
 ] as const
 
 export function StorefrontLayout() {
+  const navigate = useNavigate()
+  const [query, setQuery] = useState('')
+  const totalItems = useCartStore(selectTotalItems)
+
+  function handleSearch(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const trimmed = query.trim()
+    navigate(trimmed ? `/products?q=${encodeURIComponent(trimmed)}` : '/products')
+  }
+
   return (
     <div className="flex min-h-screen flex-col bg-paper text-ink">
       <a
@@ -39,7 +52,11 @@ export function StorefrontLayout() {
           </nav>
 
           <div className="ml-auto flex items-center gap-2">
-            <div className="relative hidden lg:block">
+            <form
+              role="search"
+              onSubmit={handleSearch}
+              className="relative hidden lg:block"
+            >
               <Search
                 aria-hidden="true"
                 size={16}
@@ -50,17 +67,26 @@ export function StorefrontLayout() {
                 type="search"
                 aria-label="Search products"
                 placeholder="Search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
                 className="h-10 w-64 rounded-pill border border-line bg-surface-sunken pl-9 pr-4 text-body-sm text-ink transition-colors duration-120 placeholder:text-muted focus:border-brand focus:outline-none"
               />
-            </div>
+            </form>
 
-            <button
-              type="button"
-              aria-label="Cart"
-              className="inline-flex size-10 items-center justify-center rounded-md text-graphite transition-colors duration-120 hover:bg-surface-sunken hover:text-ink"
+            <Link
+              to="/cart"
+              aria-label={
+                totalItems > 0 ? `Cart, ${totalItems} items` : 'Cart'
+              }
+              className="relative inline-flex size-10 items-center justify-center rounded-md text-graphite transition-colors duration-120 hover:bg-surface-sunken hover:text-ink"
             >
               <ShoppingBag aria-hidden="true" size={20} strokeWidth={1.5} />
-            </button>
+              {totalItems > 0 ? (
+                <span className="absolute -right-0.5 -top-0.5 inline-flex min-w-5 items-center justify-center rounded-pill bg-brand px-1 text-caption font-semibold tabular-nums text-white">
+                  {totalItems > 99 ? '99+' : totalItems}
+                </span>
+              ) : null}
+            </Link>
           </div>
         </div>
       </header>

@@ -21,20 +21,24 @@ function groupThousands(value: string): string {
 }
 
 /**
- * Format an amount in major units (`4999.5` → `"Rs 4,999.50"`).
+ * Format an amount given as an integer count of minor units (`499950` →
+ * `"Rs 4,999.50"`), matching the API wire format and the storage convention.
  *
  * Deliberately avoids `Intl.NumberFormat` / `toLocaleString`: ICU data and the
  * host locale differ between machines, which would make prices render
  * differently in CI than in the browser. Formatting is done by hand so output
  * is deterministic everywhere.
  */
-export function formatMoney(amount: number, currency: string = DEFAULT_CURRENCY): string {
+export function formatMoney(
+  minorAmount: number,
+  currency: string = DEFAULT_CURRENCY,
+): string {
   const fraction = CURRENCY_FRACTIONS[currency] ?? DEFAULT_FRACTION
   const symbol = CURRENCY_SYMBOLS[currency] ?? `${currency} `
 
-  const safeAmount = Number.isFinite(amount) ? amount : 0
+  const safeAmount = Number.isFinite(minorAmount) ? Math.round(minorAmount) : 0
   const negative = safeAmount < 0
-  const minorUnits = Math.round(Math.abs(safeAmount) * fraction)
+  const minorUnits = Math.abs(safeAmount)
   const whole = Math.floor(minorUnits / fraction)
   const remainder = minorUnits % fraction
 

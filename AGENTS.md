@@ -60,7 +60,8 @@ reinstall (CI re-downloads; acceptable).
 ### Deploy
 
 The app ships as three pieces: the client to **Vercel**, the API to **Render** as a Docker
-image, and MongoDB to **Atlas**. Full runbook in `docs/DEPLOY.md`.
+image (or **Cloudflare Workers** / **Vercel** serverless — see below), and MongoDB to
+**Atlas**. Full runbook in `docs/DEPLOY.md`.
 
 - **`client/vercel.json`** — Vite build (`npm run build`, output `dist`) with an SPA
   rewrite so every path falls back to `index.html` for the data router.
@@ -70,6 +71,19 @@ image, and MongoDB to **Atlas**. Full runbook in `docs/DEPLOY.md`.
 - **`render.yaml`** — Render blueprint: Docker service from `./server`, health check
   `/api/v1/health`, `autoDeploy` on push. Secrets are `sync: false` (prompted, never
   committed). Render injects `PORT`; do not set it.
+- **`server/vercel.json` / `server/api/[...path].ts`** — fallback API target: the same
+  Express app as a Vercel serverless function (a separate project rooted at `server`) for
+  when Render requires a card. `tsconfig.json` includes `api` for type-checking;
+  `tsconfig.build.json` excludes it and owns `rootDir`, so the Docker build is unchanged.
+- **`server/wrangler.jsonc` / `server/worker/`** — Cloudflare Workers target: the same
+  Express app bundled by wrangler (`nodejs_compat`). `worker/index.ts` proxies to a
+  singleton `MongoDBDurableObject` (`worker/mongo-do.ts`) that holds the Express app and
+  the Mongoose connection and serves via `handleAsNodeRequest`; the DO is why the DB
+  socket survives across requests. `wrangler.jsonc` also aliases `pino`/`pino-http` to
+  Worker-safe shims in `worker/shims/` — keep that `alias` block. The Worker imports the
+  compiled `dist/` output, so `npm run build` must precede `npm run cf:deploy`. `worker/`
+  sits outside `src`, so it is not type-checked or emitted by the `src` build. `MONGODB_URI`
+  must use the **non-SRV seed list** (workerd cannot resolve `mongodb+srv://`).
 - **`scripts/smoke.mjs`** (`npm run smoke`) — hits `health` and `products?limit=1` on a
   deployed API. Point it with `SMOKE_API_BASE_URL` (falls back to `VITE_API_BASE_URL`, then
   `http://localhost:5000/api/v1`).

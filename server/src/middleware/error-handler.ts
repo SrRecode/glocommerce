@@ -12,6 +12,22 @@ function fromZodError(error: z.ZodError): FieldErrors {
   return fieldErrors;
 }
 
+// body-parser rejects a malformed JSON/urlencoded body with an error carrying a
+// 4xx `status`/`statusCode` and `expose: true`. Without this it falls through to
+// the generic 500 branch even though the client is at fault.
+function exposedClientStatus(error: unknown): number | undefined {
+  if (typeof error !== "object" || error === null) return undefined;
+  const { status, statusCode, expose } = error as {
+    status?: unknown;
+    statusCode?: unknown;
+    expose?: unknown;
+  };
+  const raw = statusCode ?? status;
+  if (expose !== true) return undefined;
+  if (typeof raw !== "number" || raw < 400 || raw > 499) return undefined;
+  return raw;
+}
+
 export const errorHandler: ErrorRequestHandler = (error, _req, res, _next) => {
   if (res.headersSent) return;
 
@@ -29,6 +45,15 @@ export const errorHandler: ErrorRequestHandler = (error, _req, res, _next) => {
       message: error.message,
       ...(error.fieldErrors ? { fieldErrors: error.fieldErrors } : {}),
       code: error.code,
+    });
+    return;
+  }
+
+  const clientStatus = exposedClientStatus(error);
+  if (clientStatus) {
+    res.status(clientStatus).json({
+      message: "Invalid request",
+      code: "BAD_REQUEST",
     });
     return;
   }

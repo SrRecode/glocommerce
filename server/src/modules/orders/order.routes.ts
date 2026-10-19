@@ -2,6 +2,7 @@ import { Router } from "express";
 import { rateLimit } from "express-rate-limit";
 import { env } from "../../config/env.js";
 import { optionalAuth, requireAuth } from "../../middleware/auth.js";
+import { clientRateLimitKey } from "../../middleware/rate-limit.js";
 import { validateBody, validateParams, validateQuery } from "../../middleware/validate.js";
 import {
   createOrder,
@@ -22,6 +23,7 @@ const ordersRateLimit = rateLimit({
   limit: env.AUTH_RATE_LIMIT_MAX,
   standardHeaders: "draft-8",
   legacyHeaders: false,
+  keyGenerator: clientRateLimitKey,
   skip: () => env.isTest,
 });
 

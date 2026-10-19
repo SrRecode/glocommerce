@@ -8,6 +8,7 @@ import { env } from "./config/env.js";
 import { logger } from "./config/logger.js";
 import { errorHandler } from "./middleware/error-handler.js";
 import { notFound } from "./middleware/not-found.js";
+import { clientRateLimitKey } from "./middleware/rate-limit.js";
 import { apiV1Router } from "./routes.js";
 import { AppError } from "./utils/app-error.js";
 
@@ -42,6 +43,7 @@ export function buildApp(): Express {
       limit: env.RATE_LIMIT_MAX,
       standardHeaders: "draft-8",
       legacyHeaders: false,
+      keyGenerator: clientRateLimitKey,
       skip: (req) =>
         env.isTest || req.originalUrl.split("?")[0] === "/api/v1/health",
     }),

@@ -9,10 +9,15 @@ build/
 .vite/
 *.tsbuildinfo
 
+# cloudflare wrangler
+.wrangler/
+.wrangler-dryrun/
+
 # env
 .env
 .env.*
 !.env.example
+.dev.vars
 
 # tests / coverage
 coverage/

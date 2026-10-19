@@ -1,0 +1,28 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "glocommerce-api",
+  "main": "worker/index.ts",
+  // Run `npm run build` before deploying: this entry imports the compiled `dist/` output.
+  "compatibility_date": "2026-09-01",
+  "compatibility_flags": ["nodejs_compat"],
+  // The Node runtime keeps the real pino; on workerd both packages crash at import time,
+  // so they are swapped for Workers-safe shims in the bundle only.
+  "alias": {
+    "pino": "./worker/shims/pino.ts",
+    "pino-http": "./worker/shims/pino-http.ts"
+  },
+  "vars": {
+    "NODE_ENV": "production",
+    "CLIENT_ORIGIN": "https://glocommerce-client.vercel.app,https://glocommerce-client-f644i4l6z-srrecodes-projects.vercel.app",
+    "COOKIE_SAME_SITE": "none"
+  },
+  // The Express app + Mongoose connection live in a singleton Durable Object so the
+  // MongoDB TCP socket is not reused across request contexts (which workerd forbids).
+  // SQLite-backed classes are available on the Workers Free plan; no DO storage is used.
+  "durable_objects": {
+    "bindings": [{ "name": "MONGO_DO", "class_name": "MongoDBDurableObject" }]
+  },
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["MongoDBDurableObject"] }
+  ]
+}

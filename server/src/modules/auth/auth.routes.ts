@@ -3,6 +3,7 @@ import { rateLimit } from "express-rate-limit";
 import { env } from "../../config/env.js";
 import { requireAuth } from "../../middleware/auth.js";
 import { assertTrustedOrigin } from "../../middleware/csrf.js";
+import { clientRateLimitKey } from "../../middleware/rate-limit.js";
 import { validateBody } from "../../middleware/validate.js";
 import {
   forgotPassword,
@@ -29,6 +30,7 @@ const authRateLimit = rateLimit({
   limit: env.AUTH_RATE_LIMIT_MAX,
   standardHeaders: "draft-8",
   legacyHeaders: false,
+  keyGenerator: clientRateLimitKey,
   skip: () => env.isTest,
 });
 

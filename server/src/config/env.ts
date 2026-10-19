@@ -2,7 +2,12 @@ import { config as loadEnvFile } from "dotenv";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
 
-loadEnvFile({ path: fileURLToPath(new URL("../../../.env", import.meta.url)) });
+try {
+  loadEnvFile({ path: fileURLToPath(new URL("../../../.env", import.meta.url)) });
+} catch {
+  // Runtimes without a Node filesystem (e.g. Cloudflare Workers) cannot read a .env file.
+  // There, configuration arrives through the platform's own env binding instead.
+}
 
 const DEVELOPMENT_ACCESS_SECRET = "glocommerce-development-access-secret-not-for-production";
 const DEFAULT_CLIENT_ORIGIN = "http://localhost:5173";
@@ -62,6 +67,17 @@ const clientOrigins = raw.CLIENT_ORIGIN.split(",")
   .map((origin) => origin.trim())
   .filter(Boolean);
 
+// The local uploads directory is resolved relative to this module. On runtimes without a
+// Node filesystem (e.g. Cloudflare Workers) that resolution is unavailable; fall back to a
+// temp path so importing this module never throws. Cloudinary is used there anyway.
+function resolveUploadsDir(): string {
+  try {
+    return fileURLToPath(new URL("../../uploads", import.meta.url));
+  } catch {
+    return "/tmp/uploads";
+  }
+}
+
 export const env = {
   ...raw,
   isProduction,
@@ -79,7 +95,7 @@ export const env = {
   cloudinaryEnabled: Boolean(
     raw.CLOUDINARY_CLOUD_NAME && raw.CLOUDINARY_API_KEY && raw.CLOUDINARY_API_SECRET,
   ),
-  uploadsDir: fileURLToPath(new URL("../../uploads", import.meta.url)),
+  uploadsDir: resolveUploadsDir(),
 } as const;
 
 export type Env = typeof env;
